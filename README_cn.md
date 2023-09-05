@@ -40,7 +40,6 @@
 - 空间应用
 - 安全
 
-
 ### 平台端
 
 平台提供基本网络资源和相关管理能力。它包括以下组件：
@@ -73,7 +72,7 @@
 
 ### 客户端 Client 仓库介绍
 
-客户端支持Android、iOS、Web 版本，由如下仓库组成：
+客户端支持 Android、iOS、Web 版本，由如下仓库组成：
 
 - [client-android](https://github.com/ao-space/client-android)：提供 Android 端的傲空间客户端
 - [client-ios](https://github.com/ao-space/client-ios)：提供 iOS 端的傲空间客户端
