@@ -1,0 +1,42 @@
+[submodule "client/client-android"]
+	path = client/client-android
+	url = https://github.com/ao-space/client-android.git
+[submodule "client/client-ios"]
+	path = client/client-ios
+	url = https://github.com/ao-space/client-ios.git
+[submodule "platform/platform-base"]
+	path = platform/platform-base
+	url = https://github.com/ao-space/platform-base.git
+[submodule "platform/platform-deploy"]
+	path = platform/platform-deploy
+	url = https://github.com/ao-space/platform-deploy.git
+[submodule "platform/platform-nginx"]
+	path = platform/platform-nginx
+	url = https://github.com/ao-space/platform-nginx.git
+[submodule "platform/platform-proxy"]
+	path = platform/platform-proxy
+	url = https://github.com/ao-space/platform-proxy.git
+[submodule "server/space-agent"]
+	path = server/space-agent
+	url = https://github.com/ao-space/space-agent.git
+[submodule "server/space-aofs"]
+	path = server/space-aofs
+	url = https://github.com/ao-space/space-aofs.git
+[submodule "server/space-filepreview"]
+	path = server/space-filepreview
+	url = https://github.com/ao-space/space-filepreview.git
+[submodule "server/space-gateway"]
+	path = server/space-gateway
+	url = https://github.com/ao-space/space-gateway.git
+[submodule "server/space-media-vod"]
+	path = server/space-media-vod
+	url = https://github.com/ao-space/space-media-vod.git
+[submodule "server/space-postgresql"]
+	path = server/space-postgresql
+	url = https://github.com/ao-space/space-postgresql.git
+[submodule "server/space-upgrade"]
+	path = server/space-upgrade
+	url = https://github.com/ao-space/space-upgrade.git
+[submodule "server/space-web"]
+	path = server/space-web
+	url = https://github.com/ao-space/space-web.git
