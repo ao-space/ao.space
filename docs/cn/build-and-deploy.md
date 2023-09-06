@@ -238,4 +238,4 @@ docker run -d --name aospace-all-in-one  \
 
 请扫码安装客户端：
 
-![avatar](./assets/download_opensource.png)
+![avatar](../assets/download_opensource.png)
