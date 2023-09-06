@@ -232,6 +232,14 @@ docker run -d --name aospace-all-in-one  \
         ghcr.io/ao-space/space-agent:v1.0.0
 ```
 
-more docs refer to [AOspace Website](https://ao.space/open/documentation/105001)
+more docs refer to [AO.space Website](https://ao.space/en/docs/install-opensource-overview)
 
-### Clients download and run  @fuyu
+### Install Client
+
+- No need to download source code, quick installation experience
+- Android support 5.0 and above
+- iOS supports 12.0 and above
+
+Please scan the QR code to install the client:
+
+![avatar](/assets/download_opensource.png)
