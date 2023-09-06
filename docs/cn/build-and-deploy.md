@@ -229,6 +229,13 @@ docker run -d --name aospace-all-in-one  \
         ghcr.io/ao-space/space-agent:v1.0.0
 ```
 
-更多部署文档请参考[官网](https://ao.space/open/documentation/105001)
+更多文档请参考官网 [开源版安装指南](https://ao.space/docs/install-opensource-overview)
 
-### Clients download and run  @fuyu
+### 客户端下载
+
+- 无需下载源码，快速安装体验
+- 支持 Android 5.0 及以上系统版本
+
+请扫码安装客户端：
+
+![avatar](img/download_opensource.png)
