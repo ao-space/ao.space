@@ -234,7 +234,7 @@ docker run -d --name aospace-all-in-one  \
 
 more docs refer to [AO.space Website](https://ao.space/en/docs/install-opensource-overview)
 
-### Client Downloads
+### Install Client
 
 - No need to download source code, quick installation experience
 - Android support 5.0 and above
