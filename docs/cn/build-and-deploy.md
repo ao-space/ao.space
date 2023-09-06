@@ -235,7 +235,7 @@ docker run -d --name aospace-all-in-one  \
 
 - 无需下载源码，快速安装体验
 - Android 支持 5.0 及以上系统版本
-- iOS 支持12.0 及以上系统版本
+- iOS 支持 12.0 及以上系统版本
 
 请扫码安装客户端：
 
