@@ -231,10 +231,11 @@ docker run -d --name aospace-all-in-one  \
 
 更多文档请参考官网 [开源版安装指南](https://ao.space/docs/install-opensource-overview)
 
-### 客户端下载
+### 安装客户端
 
 - 无需下载源码，快速安装体验
-- 支持 Android 5.0 及以上系统版本
+- Android 支持 5.0 及以上系统版本
+- iOS 支持12.0 及以上系统版本
 
 请扫码安装客户端：
 
