@@ -38,7 +38,7 @@ body:
   - type: input
     id: client_version
     attributes:
-      label: Client version
+      label: App version
   - type: input
     id: browser
     attributes:
