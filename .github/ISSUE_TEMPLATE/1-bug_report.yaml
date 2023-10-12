@@ -28,7 +28,7 @@ body:
   - type: input
     id: select_version
     attributes:
-      label: Please select the version you are using （trial version or open-source version）
+      label: Please tell us which version you are using （trial version or open-source version）
     validations:
       required: true
   - type: input
