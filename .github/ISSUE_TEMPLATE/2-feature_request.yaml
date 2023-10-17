@@ -1,0 +1,25 @@
+name: Feature request
+description: File a feature request. If this doesn't look right, choose a different type.
+labels: ["Product"]
+body:
+  - type: markdown
+    id: introduction
+    attributes:
+      value: |
+        Thanks for taking the time to fill out this feature report!
+  - type: textarea
+    id: what_happened
+    attributes:
+      label: Describe the problem
+    validations:
+      required: true
+  - type: textarea
+    id: expected_behavior
+    attributes:
+      label: Describe the solution
+    validations:
+      required: true
+  - type: textarea
+    id: others
+    attributes:
+      label: Additional context
