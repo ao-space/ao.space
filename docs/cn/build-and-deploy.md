@@ -32,7 +32,7 @@
 
 docker镜像构建方式基本一样，都是用Dockerfile来构建镜像
 
-构建之前，我想提醒您，如果您希望用本地自己构建的镜像来运行傲空间
+构建之前，我想提醒您，如果您希望用本地自己构建的镜像来运行 AO.space
 
 建议您先构建除了 space-agent 之外的其他镜像，最后再构建space-agent
 
@@ -59,7 +59,7 @@ docker build -t local/space-upgrade:{tag} ./space-upgrade
 
 #### 服务端部署
 
-全部构建完成后，您可以开始部署自己的傲空间
+全部构建完成后，您可以开始部署自己的 AO.space
 
 确保 space-agent 中的 docker-compose 文件在编译前已被修改使用本地的image后
 
@@ -152,7 +152,7 @@ docker run -d --name aospace-all-in-one  \
 
 安装依赖库：
 
-傲空间源码中使用了一些第三方开源库代码，在运行项目工程前需要先安装依赖的库。具体方式为：打开 Mac 上终端应用程序，进入源码文件所在目录（Podfile 文件所在目录），执行 `Pod install` 命令，安装项目所依赖的第三方开源库。  
+AO.space 源码中使用了一些第三方开源库代码，在运行项目工程前需要先安装依赖的库。具体方式为：打开 Mac 上终端应用程序，进入源码文件所在目录（Podfile 文件所在目录），执行 `Pod install` 命令，安装项目所依赖的第三方开源库。  
 
 运行：
 用 Xcode 打开工程文件 EulixSpace.xcworkspace 后 Run 项目。APP 使用到摄像头，可以在 iPhone 设备上运行，或者通过模拟器 My Mac(Designed for iPhone) 来运行程序。
@@ -167,7 +167,7 @@ docker run -d --name aospace-all-in-one  \
 
 你可以在[here](https://github.com/ao-space/space-agent/pkgs/container/space-agent)找到我们最新发布的版本
 
-如果你想要安装最新版本的傲空间
+如果你想要安装最新版本的 AO.space
 
 #### 服务器环境准备
 
