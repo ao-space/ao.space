@@ -6,7 +6,7 @@
 
 **AO.space** 由服务端、客户端、平台端三个部分组成。服务端和客户端只运行在个人设备上，使用公钥认证建立加密通信通道。服务端是管理保护用户数据的核心部分，目前支持 x86_64 和 aarch64 两个架构，可运行在个人服务器、个人计算机等设备上。客户端让用户在不同平台上快速安全的访问个人数据，目前支持 Web、Android 和 iOS，方便用户随时随地使用。平台端既可使用 AO.space 默认提供的平台，也可以自己部署，两种方式下平台都在无法解析用户数据的前提下提供网络通信服务。
 
-**AO.space** 项目现已捐赠到 openEuler 社区，基于社区不断获得产品、方案等更多创新发展，实现共赢。[更多详情请查阅 >](https://ao.space/blog/aospace-success-openeuler-summit-2023)
+**AO.space** 项目现已捐赠到 openEuler 社区，基于社区不断获得产品、方案等更多创新发展，实现共赢。[更多更多 >](https://ao.space/blog/aospace-success-openeuler-summit-2023)
 
 ## 系统整体架构
 
