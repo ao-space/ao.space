@@ -1,0 +1,14 @@
+tag: v1.0.0          # default:v1.0.0
+services:
+  - space-aofs
+  - space-filepreview
+  - space-gateway
+  - space-media-vod
+  - space-postgresql
+  - space-web
+  - space-agent
+  - space-upgrade
+
+whetherproxy: no   # 是否通过代理来构建docker镜像？/Whether build docker images through a proxy?
+httpproxy_address: 127.0.0.1:9989     
+httpsproxy_address: 127.0.0.1:9989 # 如果代理，在此输入代理地址。 / If you are a proxy, enter the proxy address here.
