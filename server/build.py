@@ -3,6 +3,7 @@ from ruamel.yaml import YAML
 import subprocess
 import time
 import logging
+import argparse
 
 # 设置日志配置
 logging.basicConfig(level=logging.INFO, format='%(asctime)s - %(levelname)s - %(message)s')
@@ -40,6 +41,32 @@ def build_image(imagename, tag, retries=3, delay=5):
             else:
                 logging.error(f"Failed to build {imagename}/{tag} after {retries} attempts")
 
+def run_image(imagename, tag, retries=3, delay=5):
+    for attempt in range(retries):
+        try:
+            logging.info(f"Running image for {imagename}/{tag}, attempt {attempt + 1}")
+            subprocess.run(f'export DATADIR="$HOME/aospace"',shell=True, check=True)
+            subprocess.run(f'sudo docker network create ao-space',shell=True, check=True)
+            subprocess.run(f'sudo docker run -d --name aospace-all-in-one  \
+        --restart always  \
+        --network=ao-space  \
+        --publish 5678:5678  \
+        --publish 127.0.0.1:5680:5680  \
+        -v $DATADIR:/aospace  \
+        -v /var/run/docker.sock:/var/run/docker.sock:ro  \
+        -e AOSPACE_DATADIR=$DATADIR \
+        -e RUN_NETWORK_MODE="host"  \
+        ghcr.io/ao-space/{imagename}:{tag}',shell=True, check=True)
+            logging.info(f"Successfully start {imagename}/{tag}")
+            return
+        except subprocess.CalledProcessError as e:
+            logging.error(f"Failed to run {imagename}/{tag}: {e}")
+            if attempt < retries - 1:
+                logging.info(f"Retrying in {delay} seconds...")
+                time.sleep(delay)
+            else:
+                logging.error(f"Failed to run {imagename}/{tag} after {retries} attempts")
+
 def update_space_agent_config(conf):
     yaml_loader = YAML()
     with open('./space-agent/res/docker-compose_run_as_docker.yml', 'r') as file:
@@ -57,20 +84,36 @@ def update_space_agent_config(conf):
 
 def main():
     conf = load_config()
-    if conf["whetherproxy"]:
-        logging.info("Setting proxy")
-        set_proxy(conf["httpproxy_address"], conf["httpsproxy_address"])
-    else:
-        logging.info("No proxy build mode.")
+    parser = argparse.ArgumentParser(description="构建和运行工具")
+    subparsers = parser.add_subparsers(dest='command', help='子命令')
+
+    services = conf["services"]
+    service_dict = {service: details['tag'] for service, details in services.items()}
     
-    for service in conf["services"]:
-        if service != "space-agent":
-            logging.info(f"Building image for {service}/{conf['tag']}")
-            build_image(service, conf["tag"])
+    # build 子命令
+    parser_build = subparsers.add_parser('build', help='构建项目')
+
+      # run 子命令
+    parser_run = subparsers.add_parser('run', help='运行项目')
+
+    args = parser.parse_args()
+    if args.command == 'build':
+        if conf["whetherproxy"]:
+            logging.info("Setting proxy")
+            set_proxy(conf["httpproxy_address"], conf["httpsproxy_address"])
         else:
-            logging.info("Setting for space-agent...")
-            update_space_agent_config(conf)
-            build_image(service, conf["tag"])
+            logging.info("No proxy build mode.")
+        for service,tag_number in service_dict.items():
+            if service != "space-agent":
+                logging.info(f"Building image for {service}/{tag_number}")
+                build_image(service, tag_number)
+            else:
+                logging.info("Setting for space-agent...")
+                update_space_agent_config(conf)
+                build_image(service, tag_number)
+    elif args.command == 'run':
+        run_image("local/space-agent", service_dict['space-agent'])
+    
 
 if __name__ == "__main__":
     main()
