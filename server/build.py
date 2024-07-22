@@ -16,6 +16,7 @@ def load_config(filepath="./config.yaml"):
 
 def set_proxy(http_proxy, https_proxy):
     commands = [
+        'sudo rm -r /etc/systemd/system/docker.service.d'
         'sudo mkdir -p /etc/systemd/system/docker.service.d',
         'sudo touch /etc/systemd/system/docker.service.d/http-proxy.conf',
         f'sudo printf "[Service]\nEnvironment=\\"HTTP_PROXY=http://{http_proxy}/\\"\nEnvironment=\\"HTTPS_PROXY=http://{https_proxy}/\\"\nEnvironment=\\"NO_PROXY=localhost,127.0.0.1,localaddress,.localdomain.com\\"" > /etc/systemd/system/docker.service.d/http-proxy.conf',
@@ -71,14 +72,17 @@ def update_space_agent_config(conf):
     yaml_loader = YAML()
     with open('./space-agent/res/docker-compose_run_as_docker.yml', 'r') as file:
         agent_conf = yaml_loader.load(file)
+
     for service_name, this_service in agent_conf['services'].items():
-        for built_image in conf["services"]:
+        for built_image, tag in conf.items():
             if service_name == f"ao{built_image}":
-                this_service['image'] = f'local/{built_image}:{conf["tag"]}'
+                this_service['image'] = f'local/{built_image}:{tag}'
                 logging.info(f'Updated image for {service_name} to {this_service["image"]}')
+                
         if service_name == "aospace-nginx":
-            this_service['image'] = f'local/space-web:{conf["tag"]}'
+            this_service['image'] = f'local/space-web:{conf.get("space-web", "latest")}'
             logging.info(f'Updated image for {service_name} to {this_service["image"]}')
+    
     with open('./space-agent/res/docker-compose_run_as_docker.yml', 'w') as newfile:
         yaml_loader.dump(agent_conf, newfile)
 
@@ -109,7 +113,7 @@ def main():
                 build_image(service, tag_number)
             else:
                 logging.info("Setting for space-agent...")
-                update_space_agent_config(conf)
+                update_space_agent_config(service_dict)
                 build_image(service, tag_number)
     elif args.command == 'run':
         run_image("local/space-agent", service_dict['space-agent'])

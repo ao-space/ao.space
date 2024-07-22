@@ -21,12 +21,15 @@
 2、更新submodules
 
 ```bash
+# 在ao.space目录中执行
+git submodule init        
 git submodule update --remote
 ```
 
 2、使用命令开始构建：
 
 ```bash
+# 在ao.space/server目录中执行
 sudo make build
 ```
 
