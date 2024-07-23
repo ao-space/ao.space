@@ -4,6 +4,7 @@ import subprocess
 import time
 import logging
 import argparse
+import os
 
 # 设置日志配置
 logging.basicConfig(level=logging.INFO, format='%(asctime)s - %(levelname)s - %(message)s')
@@ -16,7 +17,7 @@ def load_config(filepath="./config.yaml"):
 
 def set_proxy(http_proxy, https_proxy):
     commands = [
-        'sudo rm -r /etc/systemd/system/docker.service.d'
+        'sudo rm -rf /etc/systemd/system/docker.service.d',
         'sudo mkdir -p /etc/systemd/system/docker.service.d',
         'sudo touch /etc/systemd/system/docker.service.d/http-proxy.conf',
         f'sudo printf "[Service]\nEnvironment=\\"HTTP_PROXY=http://{http_proxy}/\\"\nEnvironment=\\"HTTPS_PROXY=http://{https_proxy}/\\"\nEnvironment=\\"NO_PROXY=localhost,127.0.0.1,localaddress,.localdomain.com\\"" > /etc/systemd/system/docker.service.d/http-proxy.conf',
@@ -43,22 +44,37 @@ def build_image(imagename, tag, retries=3, delay=5):
                 logging.error(f"Failed to build {imagename}/{tag} after {retries} attempts")
 
 def run_image(imagename, tag, retries=3, delay=5):
+    # 设置 DATADIR 变量
+    datadir = os.path.expanduser("~/aospace")
+    os.environ["DATADIR"] = datadir
+
     for attempt in range(retries):
         try:
             logging.info(f"Running image for {imagename}/{tag}, attempt {attempt + 1}")
-            subprocess.run(f'export DATADIR="$HOME/aospace"',shell=True, check=True)
-            subprocess.run(f'sudo docker network create ao-space',shell=True, check=True)
-            subprocess.run(f'sudo docker run -d --name aospace-all-in-one  \
-        --restart always  \
-        --network=ao-space  \
-        --publish 5678:5678  \
-        --publish 127.0.0.1:5680:5680  \
-        -v $DATADIR:/aospace  \
-        -v /var/run/docker.sock:/var/run/docker.sock:ro  \
-        -e AOSPACE_DATADIR=$DATADIR \
-        -e RUN_NETWORK_MODE="host"  \
-        ghcr.io/ao-space/{imagename}:{tag}',shell=True, check=True)
-            logging.info(f"Successfully start {imagename}/{tag}")
+            
+            # 删除现有的 ao-space 网络
+            try:
+                subprocess.run('sudo docker network rm ao-space', shell=True, check=True)
+                logging.info("Existing ao-space network removed.")
+            except subprocess.CalledProcessError:
+                logging.info("No existing ao-space network found or failed to remove. Continuing...")
+            
+            # 创建新的 ao-space 网络
+            subprocess.run('sudo docker network create ao-space', shell=True, check=True)
+            
+            # 运行 docker 容器
+            subprocess.run(f'''sudo docker run -d --name aospace-all-in-one  \
+                --restart always  \
+                --network=ao-space  \
+                --publish 5678:5678  \
+                --publish 127.0.0.1:5680:5680  \
+                -v {datadir}:/aospace  \
+                -v /var/run/docker.sock:/var/run/docker.sock:ro  \
+                -e AOSPACE_DATADIR={datadir} \
+                -e RUN_NETWORK_MODE="host"  \
+                {imagename}:{tag}''', shell=True, check=True)
+            
+            logging.info(f"Successfully started {imagename}/{tag}")
             return
         except subprocess.CalledProcessError as e:
             logging.error(f"Failed to run {imagename}/{tag}: {e}")
@@ -106,6 +122,11 @@ def main():
             logging.info("Setting proxy")
             set_proxy(conf["httpproxy_address"], conf["httpsproxy_address"])
         else:
+            commands = [
+            'sudo rm -r /etc/systemd/system/docker.service.d'
+            ]
+            for cmd in commands:
+                subprocess.run(cmd, shell=True, check=True)
             logging.info("No proxy build mode.")
         for service,tag_number in service_dict.items():
             if service != "space-agent":
