@@ -123,7 +123,7 @@ def main():
             set_proxy(conf["httpproxy_address"], conf["httpsproxy_address"])
         else:
             commands = [
-            'sudo rm -r /etc/systemd/system/docker.service.d'
+            'sudo rm -rf /etc/systemd/system/docker.service.d'
             ]
             for cmd in commands:
                 subprocess.run(cmd, shell=True, check=True)
