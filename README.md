@@ -71,6 +71,7 @@ The server is the main data carrier of AO.space and is also the core of data pro
 - [space-media-vod](https://github.com/ao-space/space-media-vod)：Provide streaming media data access services
 - [space-web](https://github.com/ao-space/space-web)：Providing an Nginx reverse proxy service for serving web-based service resources and requests
 - [space-upgrade](https://github.com/ao-space/space-upgrade)：On-demand startup, mainly responsible for server-side upgrades
+- [space-single](https://github.com/ao-space/space-single)：Combine all server-side components into a single container for easy one-click deployment.
 
 ### Clients repository introduction
 
