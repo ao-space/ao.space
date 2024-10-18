@@ -42,4 +42,4 @@
 	url = https://github.com/ao-space/space-web.git
 [submodule "server/space-AllToOne"]
 	path = server/space-AllToOne
-	url = https://github.com/Gui-Yue/space-AllToOne.git
+	url = https://github.com/ao-space/space-single.git
