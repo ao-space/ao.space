@@ -71,6 +71,7 @@ AO.space 系统由三个主要部分构成：服务端、客户端和平台端�
 - [space-media-vod](https://github.com/ao-space/space-media-vod)：提供流媒体播放服务
 - [space-web](https://github.com/ao-space/space-web)：提供 Web 端的服务资源及请求的反向代理服务
 - [space-upgrade](https://github.com/ao-space/space-upgrade)：按需启动，主要负责服务端的升级
+- [space-single](https://github.com/ao-space/space-single)：将服务端的所有组件合并到一个容器方便用户一键式部署
 
 ### 客户端 Client 仓库介绍
 
