@@ -20,6 +20,10 @@ If you want to submit code to the project, you can do so by following these step
 - Perform tests to ensure that any changes have no impact.
 - Commit your changes and create a pull request.
 
+When working on documentation changes, you can run the local markdown link check to validate relative references:
+
+- `python3 scripts/check-doc-links.py`
+
 ### Code Quality
 
 We attach great importance to the quality of the code, so the code you submit should meet the following requirements:

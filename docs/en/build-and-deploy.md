@@ -53,7 +53,7 @@ docker build -t local/space-web:{tag} ./space-web
 docker build -t local/space-filepreview:{tag} ./space-filepreview
 docker build -t local/space-media-vod:{tag} ./space-media-vod
 docker build -t local/space-postgresql:{tag} ./space-postgresql
-docker build -t local/space-agent:{tag} ./space-postgresql
+docker build -t local/space-agent:{tag} ./space-agent
 docker build -t local/space-upgrade:{tag} ./space-upgrade
 
 ```
@@ -137,9 +137,9 @@ Environment
 
 Source code download
 
-You can download the project as a whole through [xxx], or download this module's repository using the following command:
+You can download the project as a whole through [GitHub](https://github.com/ao-space/ao.space), or download this module's repository using the following command:
 
-- `git clone git@github.com:ao-space/space-aofs.git ./client-android`
+- `git clone git@github.com:ao-space/client-android.git ./client-android`
 
 Deploy
 
@@ -240,6 +240,4 @@ more docs refer to [AO.space Website](https://ao.space/en/docs/install-opensourc
 - Android support 5.0 and above
 - iOS supports 12.0 and above
 
-Please scan the QR code to install the client:
-
-![avatar](/assets/download_opensource.png)
+Please refer to the [download page](https://ao.space/download) to install the client.
