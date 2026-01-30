@@ -50,7 +50,7 @@ docker build -t local/space-web:{tag} ./space-web
 docker build -t local/space-filepreview:{tag} ./space-filepreview
 docker build -t local/space-media-vod:{tag} ./space-media-vod
 docker build -t local/space-postgresql:{tag} ./space-postgresql
-docker build -t local/space-agent:{tag} ./space-postgresql
+docker build -t local/space-agent:{tag} ./space-agent
 docker build -t local/space-upgrade:{tag} ./space-upgrade
 
 ```
@@ -132,7 +132,7 @@ docker run -d --name aospace-all-in-one  \
 
 源码下载：
 
-可以使用[项目整体下载](xxx)下载的方式，也可以通过通过一下命令下载本模块的仓库：
+可以使用[项目整体下载](https://github.com/ao-space/ao.space)下载的方式，也可以通过通过一下命令下载本模块的仓库：
 
 - `git clone git@github.com:ao-space/client-android`
 
@@ -237,6 +237,4 @@ docker run -d --name aospace-all-in-one  \
 - Android 支持 5.0 及以上系统版本
 - iOS 支持 12.0 及以上系统版本
 
-请扫码安装客户端：
-
-![avatar](/assets/download_opensource.png)
+请访问[下载页面](https://ao.space/download)安装客户端。
