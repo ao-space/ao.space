@@ -93,12 +93,17 @@ AO.space 系统由三个主要部分构成：服务端、客户端和平台端�
 
 可以使用发布的版本进行部署，也可以从源码编译构建并部署，请参考 [build-and-deploy](./docs/cn/build-and-deploy.md)。
 
+简化的 compose 部署说明见：
+1. `deploy/server/README.md`
+2. `deploy/platform/README.md`
+
 ## 文档
 
 - [开发文档](https://ao.space/docs)
 - [使用文档](https://ao.space/support/help)
 - [博客](https://ao.space/blog)
 - [API 参考文档](https://ao.space/docs/api/)
+- [本地 API 概览](./docs/cn/api-overview.md)
 
 开发文档和使用文档的仓库为 [官网仓库](https://github.com/ao-space/website)，欢迎提交 PR。
 

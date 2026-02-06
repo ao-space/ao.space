@@ -1,0 +1,159 @@
+version: "3.8"
+
+x-restart-policy:
+  &restart_policy
+  restart: ${CONTAINER_RESTART_POLICY}
+x-depends_on-healthy:
+  &depends_on-healthy
+  condition: service_healthy
+x-healthcheck-defaults:
+  &healthcheck_defaults
+  interval: "${HEALTHCHECK_INTERVAL}"
+  timeout: "${HEALTHCHECK_TIMEOUT}"
+  retries: ${HEALTHCHECK_RETRIES}
+  start_period: 10s
+x-logging-defaults:
+  &logging_defaults
+  logging:
+    driver: json-file
+    options:
+      max-size: "${LOGGING_MAX_SIZE}"
+      max-file: "${LOGGING_MAX_FILE}"
+
+services:
+  aoplatform-mysql:
+    container_name: aoplatform-mysql
+    image: mysql:8.0.31
+    command: --character-set-server=utf8mb4 --collation-server=utf8mb4_unicode_ci
+    <<: [*restart_policy, *logging_defaults]
+    healthcheck:
+      <<: *healthcheck_defaults
+      test: mysqladmin ping -h 127.0.0.1 -u $$MYSQL_USER --password=$$MYSQL_PASSWORD
+    environment:
+      MYSQL_ROOT_PASSWORD: ${MYSQL_ROOT_PASSWORD}
+      MYSQL_DATABASE: ${MYSQL_DATABASE}
+      MYSQL_USER: ${MYSQL_USER}
+      MYSQL_PASSWORD: ${MYSQL_PASSWORD}
+    volumes:
+      - ${AOPLATFORM_DATA_DIR}/mysql/data:/var/lib/mysql
+
+  aoplatform-redis:
+    container_name: aoplatform-redis
+    image: redis:6.2.8-bullseye
+    command: /bin/sh -c "exec redis-server --requirepass $$REDIS_PASSWORD --save 20 1 --appendonly yes"
+    <<: [*restart_policy, *logging_defaults]
+    healthcheck:
+      <<: *healthcheck_defaults
+      test: redis-cli ping
+    environment:
+      REDIS_PASSWORD: ${REDIS_PASSWORD}
+    volumes:
+      - ${AOPLATFORM_DATA_DIR}/redis/data:/data
+
+  aoplatform-proxy:
+    container_name: aoplatform-proxy
+    image: hub.eulix.xyz/ao-space/platform-proxy:v1.0.0
+    <<: [*restart_policy, *logging_defaults]
+    healthcheck:
+      <<: *healthcheck_defaults
+      test: curl --fail http://127.0.0.1/healthcheck
+    depends_on:
+      aoplatform-redis:
+        <<: *depends_on-healthy
+    ports:
+      - "127.0.0.1:${PROXY_LOCAL_BIND}:80/tcp"
+    environment:
+      REDIS_ADDR: aoplatform-redis
+      REDIS_PORT: 6379
+      REDIS_PASSWORD: ${REDIS_PASSWORD}
+      DOCKER_DNS: 127.0.0.11
+
+  aoplatform-services:
+    container_name: aoplatform-services
+    image: hub.eulix.xyz/ao-space/platform-base:v1.0.0
+    <<: [*restart_policy, *logging_defaults]
+    healthcheck:
+      <<: *healthcheck_defaults
+      test: curl --fail http://127.0.0.1:8080/v2/platform/status -H 'Request-Id:123'
+    depends_on:
+      aoplatform-mysql:
+        <<: *depends_on-healthy
+      aoplatform-redis:
+        <<: *depends_on-healthy
+    ports:
+      - "127.0.0.1:${SERVICES_LOCAL_BIND}:8080/tcp"
+    environment:
+      QUARKUS_DATASOURCE_USERNAME: ${MYSQL_USER}
+      QUARKUS_DATASOURCE_PASSWORD: ${MYSQL_PASSWORD}
+      QUARKUS_DATASOURCE_JDBC_URL: jdbc:mysql://aoplatform-mysql:3306/${MYSQL_DATABASE}?allowPublicKeyRetrieval=true&useSSL=false&serverTimezone=GMT%2B8
+      QUARKUS_REDIS_HOSTS: redis://aoplatform-redis:6379/0
+      QUARKUS_REDIS_PASSWORD: ${REDIS_PASSWORD}
+      APP_REGISTRY_SUBDOMAIN: ${USER_DOMAIN}
+    volumes:
+      - ${AOPLATFORM_DATA_DIR}/services/data:/data/attachment
+
+  aoplatform-nginx:
+    container_name: aoplatform-nginx
+    image: hub.eulix.xyz/ao-space/platform-nginx:v1.0.0
+    <<: [*restart_policy, *logging_defaults]
+    healthcheck:
+      <<: *healthcheck_defaults
+      test: curl --fail http://127.0.0.1:80/nginx_status
+    depends_on:
+      aoplatform-services:
+        <<: *depends_on-healthy
+    network_mode: host
+    environment:
+      NGINX_BIND_HTTP: ${NGINX_BIND_HTTP}
+      NGINX_BIND_HTTPS: ${NGINX_BIND_HTTPS}
+      USER_DOMAIN: ${USER_DOMAIN}
+      PROXY_LOCAL_BIND: ${PROXY_LOCAL_BIND}
+      SERVICES_LOCAL_BIND: ${SERVICES_LOCAL_BIND}
+    volumes:
+      - ${AOPLATFORM_DATA_DIR}/ssl:/etc/nginx/ssl
+
+  aonetwork-server:
+    container_name: aonetwork-server
+    image: hub.eulix.xyz/ao-space/gt:server-v1.0.0
+    <<: [*restart_policy, *logging_defaults]
+    healthcheck:
+      <<: *healthcheck_defaults
+      test: "bash -c 'printf \"GET / HTTP/1.1\\n\\n\" > /dev/tcp/127.0.0.1/80; exit $?;'"
+    depends_on:
+      aoplatform-services:
+        <<: *depends_on-healthy
+      aoplatform-nginx:
+        <<: *depends_on-healthy
+    ports:
+      - "0.0.0.0:${NETWORK_BIND}:443/tcp"
+      - "0.0.0.0:${NETWORK_BIND}:3478/udp"
+    environment:
+      NETWORK_TLSADDR: 443
+      NETWORK_ADDR: 80
+      NETWORK_LOGLEVEL: debug
+      NETWORK_API_ADDR: 0.0.0.0:81
+      NETWORK_AUTHAPI: https://${USER_DOMAIN}/v2/platform/clients/network/auth
+      NETWORK_TIMEOUT: 75s
+    volumes:
+      - ${AOPLATFORM_DATA_DIR}/ssl:/opt/crt
+
+  aoplatform-mysql-update:
+    container_name: aoplatform-mysql-update
+    image: hub.eulix.xyz/ao-space/platform-sql-update:v1.0.0
+    depends_on:
+      aoplatform-services:
+        <<: *depends_on-healthy
+      aoplatform-nginx:
+        <<: *depends_on-healthy
+      aonetwork-server:
+        <<: *depends_on-healthy
+    environment:
+      MYSQL_HOST: aoplatform-mysql
+      MYSQL_DATABASE: ${MYSQL_DATABASE}
+      MYSQL_USER: ${MYSQL_USER}
+      MYSQL_PASSWORD: ${MYSQL_PASSWORD}
+      USER_DOMAIN: ${USER_DOMAIN}
+      NETWORK_BIND: ${NETWORK_BIND}
+      NETWORK_LOCAL_HOST: aonetwork-server
+      NETWORK_LOCAL_BIND: 80
+    <<: *logging_defaults

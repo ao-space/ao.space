@@ -12,6 +12,61 @@ Please execute the following command to download the entire source code of the p
 
 ## Build and deploy
 
+If you want a simplified compose-based setup, see:
+1. `deploy/server/README.md`
+2. `deploy/platform/README.md`
+
+### Server (no platform) build + deploy (recommended for local/dev)
+
+This mode runs the server without platform dependencies. Platform-related features (internet access, push, app store, version checks) are unavailable.
+
+1. Copy `.env` and update passwords/ports:
+
+```shell
+cd deploy/server
+cp .env.example .env
+```
+
+2. Update `deploy/server/system-agent.yml` to match `.env` (Redis password).
+
+3. Build images:
+
+```shell
+docker compose --env-file .env build
+```
+
+Notes:
+1. `space-gateway` uses `server/space-gateway/Dockerfile.jvm.build` to compile Quarkus during the image build.
+2. Runtime base image uses `eclipse-temurin:17-jre` to avoid installing JDK via `yum` during build.
+3. No-platform mode sets platform URLs to `http://127.0.0.1` to avoid SSL errors.
+
+### Offline build / prebuild (space-gateway)
+
+If you cannot access Maven repositories during `docker build`, you can prebuild the gateway locally and use the prebuilt JVM runtime Dockerfile.
+
+1. Build locally:
+
+```shell
+cd server/space-gateway
+./mvnw -Dmaven.test.skip=true package
+```
+
+2. Update compose to use `Dockerfile.jvm.prebuilt`:
+
+```yaml
+services:
+  aospace-gateway:
+    build:
+      context: ../../server/space-gateway
+      dockerfile: Dockerfile.jvm.prebuilt
+```
+
+4. Start:
+
+```shell
+docker compose --env-file .env up -d --build
+```
+
 ### Platform build and deploy
 
 In the [platform-deploy depository](https://github.com/ao-space/platform-deploy), we provided a detailed introduction to the construction and deployment process of the platform.
@@ -164,6 +219,51 @@ Some third-party open source library codes are used in the Aospace source code, 
 Run Application
 
 Open the project file EulixSpace.xcworkspace with Xcode and run the project. The APP uses the camera and can run on the iPhone device, or through the emulator My Mac (Designed for iPhone) to run the program.
+
+### Client connect (no platform / LAN-only)
+
+In no-platform mode, only LAN access is supported. Make sure the phone and server are on the same LAN.
+
+1. Server web entry (for quick check): `http://<server-ip>` or `https://<server-ip>`
+2. When binding/initializing the device in the mobile app, choose the LAN/local channel.
+3. If the app asks for a platform URL, leave it empty or disable Internet access.
+
+### Regression and troubleshooting (validated)
+
+The following flow was validated on `2026-02-06` and can be reused directly.
+
+1. Restart regression (service recovery):
+
+```shell
+cd deploy/server
+docker compose --env-file .env.aofs -f docker-compose.yml down
+docker compose --env-file .env.aofs -f docker-compose.yml up -d
+AOFS_BASE=http://127.0.0.1:2001 AGENT_BASE=http://127.0.0.1:5678 GATEWAY_BASE=http://127.0.0.1:8080 ./scripts/api-full-regression.sh
+```
+
+2. Upload stability regression (long-run + concurrent):
+
+```shell
+AOFS_BASE=http://127.0.0.1:2001 ./scripts/api-e2e-write.sh
+AOFS_BASE=http://127.0.0.1:2001 ./scripts/api-e2e-write.sh
+
+# 2 concurrent multipart lanes
+AOFS_BASE=http://127.0.0.1:2001 ./scripts/api-e2e-multipart.sh &
+AOFS_BASE=http://127.0.0.1:2001 ./scripts/api-e2e-multipart.sh &
+wait
+```
+
+3. LAN binding / online-state critical settings:
+- In `deploy/server/docker-compose.full.yml`, `aospace-gateway` must expose `0.0.0.0:80->8080`; otherwise Android may show the device as offline.
+- `deploy/server/data-aofs/etc/ao-space/hardware/host_ip.data` must contain a LAN address (for example `192.168.x.x:80`), not `127.0.0.1:*`.
+
+4. Quick probes:
+
+```shell
+curl -sS "http://127.0.0.1:80/space/status"
+curl -sS "http://127.0.0.1:2001/space/v1/api/status?userId=1"
+curl -sS "http://127.0.0.1:5678/agent/status"
+```
 
 ## Release download and deply
 

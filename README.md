@@ -93,12 +93,17 @@ The responsibility of AO.space Platform is to establish a transparent communicat
 
 To deploy and run the project from a release version, or to build and run it from the source code, please refer to [build-and-deploy](./docs/en/build-and-deploy.md).
 
+For a simplified compose-based setup, see:
+1. `deploy/server/README.md`
+2. `deploy/platform/README.md`
+
 ## Documentation
 
 - [Developer Documentation](https://ao.space/en/docs)
 - [User Manual](https://ao.space/en/support/help)
 - [Blog](https://ao.space/en/blog)
 - [API References](https://ao.space/docs/api/)
+- [Local API Overview](./docs/en/api-overview.md)
 
 ## Contribution Guidelines
 

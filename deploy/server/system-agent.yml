@@ -1,0 +1,5 @@
+PlatformEnabled: false
+EnableDockerManage: false
+Redis:
+  Addr: aospace-redis:6379
+  Password: CHANGEME_REDIS_PASSWORD

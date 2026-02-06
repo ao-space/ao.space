@@ -12,6 +12,61 @@
 
 ## 构建和部署
 
+如果需要简化的 compose 部署方式，请查看：
+1. `deploy/server/README.md`
+2. `deploy/platform/README.md`
+
+### 服务端（无平台）构建与部署（推荐本地/开发）
+
+此模式不依赖平台。平台相关能力（互联网通道、推送、应用商店、版本检查）不可用。
+
+1. 复制 `.env` 并配置密码/端口：
+
+```shell
+cd deploy/server
+cp .env.example .env
+```
+
+2. 修改 `deploy/server/system-agent.yml`，让 Redis 密码与 `.env` 保持一致。
+
+3. 构建镜像：
+
+```shell
+docker compose --env-file .env build
+```
+
+说明：
+1. `space-gateway` 使用 `server/space-gateway/Dockerfile.jvm.build` 在构建镜像时编译 Quarkus。
+2. 运行时基础镜像使用 `eclipse-temurin:17-jre`，避免在构建中通过 `yum` 安装 JDK 导致空间不足。
+3. 无平台模式下将平台地址设置为 `http://127.0.0.1`，避免 SSL 报错。
+
+### 离线构建 / 预编译（space-gateway）
+
+如果 `docker build` 无法访问 Maven 仓库，可以先本地预编译 gateway，然后使用预编译 JVM 运行镜像。
+
+1. 本地编译：
+
+```shell
+cd server/space-gateway
+./mvnw -Dmaven.test.skip=true package
+```
+
+2. 修改 compose 使用 `Dockerfile.jvm.prebuilt`：
+
+```yaml
+services:
+  aospace-gateway:
+    build:
+      context: ../../server/space-gateway
+      dockerfile: Dockerfile.jvm.prebuilt
+```
+
+4. 启动：
+
+```shell
+docker compose --env-file .env up -d --build
+```
+
 ### 平台构建和部署
 
 我们在 [platform-deploy仓库](https://github.com/ao-space/platform-deploy) 中详细介绍了平台的构建和部署过程。
@@ -156,6 +211,51 @@ AO.space 源码中使用了一些第三方开源库代码，在运行项目工�
 
 运行：
 用 Xcode 打开工程文件 EulixSpace.xcworkspace 后 Run 项目。APP 使用到摄像头，可以在 iPhone 设备上运行，或者通过模拟器 My Mac(Designed for iPhone) 来运行程序。
+
+### 客户端连接（无平台 / 仅局域网）
+
+无平台模式下仅支持局域网访问，请确保手机与服务器在同一局域网内。
+
+1. 服务器 Web 入口（用于快速检查）：`http://<server-ip>` 或 `https://<server-ip>`
+2. 在移动端绑定/初始化设备时，选择局域网/本地通道。
+3. 如果客户端要求填写平台地址，请留空或关闭互联网访问选项。
+
+### 精简模式回归与排障（已验证）
+
+以下流程已在 `2026-02-06` 验证通过，可直接复用。
+
+1. 重启回归（验证服务恢复能力）：
+
+```shell
+cd deploy/server
+docker compose --env-file .env.aofs -f docker-compose.yml down
+docker compose --env-file .env.aofs -f docker-compose.yml up -d
+AOFS_BASE=http://127.0.0.1:2001 AGENT_BASE=http://127.0.0.1:5678 GATEWAY_BASE=http://127.0.0.1:8080 ./scripts/api-full-regression.sh
+```
+
+2. 上传稳定性回归（长时 + 并发）：
+
+```shell
+AOFS_BASE=http://127.0.0.1:2001 ./scripts/api-e2e-write.sh
+AOFS_BASE=http://127.0.0.1:2001 ./scripts/api-e2e-write.sh
+
+# 并发 2 路分片上传
+AOFS_BASE=http://127.0.0.1:2001 ./scripts/api-e2e-multipart.sh &
+AOFS_BASE=http://127.0.0.1:2001 ./scripts/api-e2e-multipart.sh &
+wait
+```
+
+3. 局域网绑定/在线状态关键配置：
+- `deploy/server/docker-compose.full.yml` 中 `aospace-gateway` 需暴露 `0.0.0.0:80->8080`，否则手机端会显示断线。
+- `deploy/server/data-aofs/etc/ao-space/hardware/host_ip.data` 应为局域网地址（如 `192.168.x.x:80`），不能是 `127.0.0.1:*`。
+
+4. 快速检查命令：
+
+```shell
+curl -sS "http://127.0.0.1:80/space/status"
+curl -sS "http://127.0.0.1:2001/space/v1/api/status?userId=1"
+curl -sS "http://127.0.0.1:5678/agent/status"
+```
 
 ## Release 版本下载和部署
 
