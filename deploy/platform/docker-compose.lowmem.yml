@@ -1,0 +1,264 @@
+# Low Memory AO.Space Platform Deployment
+# For small VMs with 1GB RAM (e.g., Vultr $5 plan)
+#
+# Usage:
+#   1. cp .env.simple.example .env
+#   2. Edit .env with your domain and passwords
+#   3. Place SSL certificate in data/ssl/tls.crt and data/ssl/tls.key
+#   4. docker compose -f docker-compose.lowmem.yml up -d
+#
+# Memory Budget (~800MB total):
+#   - MySQL: 256MB
+#   - Redis: 48MB
+#   - Services (Java): 350MB
+#   - Proxy: 64MB
+#   - Nginx: 32MB
+#   - GT Server: 64MB
+
+version: "3.8"
+
+x-restart-policy: &restart_policy
+  restart: unless-stopped
+
+x-logging: &logging
+  logging:
+    driver: json-file
+    options:
+      max-size: "5m"
+      max-file: "2"
+
+x-security: &security
+  security_opt:
+    - no-new-privileges:true
+
+services:
+  # ============================================
+  # Database - MySQL (Low Memory)
+  # ============================================
+  aoplatform-mysql:
+    container_name: aoplatform-mysql
+    image: mysql:8.0
+    command: >
+      --character-set-server=utf8mb4
+      --collation-server=utf8mb4_unicode_ci
+      --default-authentication-plugin=mysql_native_password
+      --skip-log-bin
+      --innodb-buffer-pool-size=64M
+      --innodb-log-buffer-size=8M
+      --max-connections=20
+      --table-open-cache=100
+      --performance-schema=OFF
+    <<: [*restart_policy, *logging, *security]
+    healthcheck:
+      test: mysqladmin ping -h 127.0.0.1 -u $$MYSQL_USER --password=$$MYSQL_PASSWORD
+      interval: 30s
+      timeout: 10s
+      retries: 5
+      start_period: 60s
+    environment:
+      MYSQL_ROOT_PASSWORD: ${MYSQL_ROOT_PASSWORD}
+      MYSQL_DATABASE: ${MYSQL_DATABASE}
+      MYSQL_USER: ${MYSQL_USER}
+      MYSQL_PASSWORD: ${MYSQL_PASSWORD}
+    volumes:
+      - ${DATA_DIR}/mysql:/var/lib/mysql
+    networks:
+      - aoplatform-internal
+    expose:
+      - "3306"
+    deploy:
+      resources:
+        limits:
+          memory: 256M
+
+  # ============================================
+  # Cache - Redis (Low Memory)
+  # ============================================
+  aoplatform-redis:
+    container_name: aoplatform-redis
+    image: redis:7-alpine
+    command: >
+      redis-server
+      --requirepass ${REDIS_PASSWORD}
+      --save 300 1
+      --appendonly no
+      --maxmemory 32mb
+      --maxmemory-policy volatile-lru
+    <<: [*restart_policy, *logging, *security]
+    healthcheck:
+      test: redis-cli -a ${REDIS_PASSWORD} ping | grep -q PONG
+      interval: 30s
+      timeout: 5s
+      retries: 3
+    volumes:
+      - ${DATA_DIR}/redis:/data
+    networks:
+      - aoplatform-internal
+    expose:
+      - "6379"
+    deploy:
+      resources:
+        limits:
+          memory: 48M
+
+  # ============================================
+  # Core Service - Platform Base (Low Memory JVM)
+  # ============================================
+  aoplatform-services:
+    container_name: aoplatform-services
+    build:
+      context: ../../platform/platform-base
+      dockerfile: Dockerfile
+    <<: [*restart_policy, *logging, *security]
+    healthcheck:
+      test: curl --fail http://127.0.0.1:8080/v2/platform/status -H 'Request-Id:health' || exit 1
+      interval: 30s
+      timeout: 10s
+      retries: 5
+      start_period: 120s
+    depends_on:
+      aoplatform-mysql:
+        condition: service_healthy
+      aoplatform-redis:
+        condition: service_healthy
+    environment:
+      QUARKUS_DATASOURCE_USERNAME: ${MYSQL_USER}
+      QUARKUS_DATASOURCE_PASSWORD: ${MYSQL_PASSWORD}
+      QUARKUS_DATASOURCE_JDBC_URL: jdbc:mysql://aoplatform-mysql:3306/${MYSQL_DATABASE}?allowPublicKeyRetrieval=true&useSSL=false&serverTimezone=GMT%2B8
+      QUARKUS_REDIS_HOSTS: redis://aoplatform-redis:6379/0
+      QUARKUS_REDIS_PASSWORD: ${REDIS_PASSWORD}
+      APP_REGISTRY_SUBDOMAIN: ${USER_DOMAIN}
+      # Low memory JVM settings: SerialGC is more memory efficient
+      JAVA_OPTS: "-Xms128m -Xmx256m -XX:+UseSerialGC -XX:MaxMetaspaceSize=64m"
+    volumes:
+      - ${DATA_DIR}/services:/data/attachment
+    networks:
+      aoplatform-internal:
+      aoplatform-edge:
+        aliases:
+          - services
+    expose:
+      - "8080"
+    deploy:
+      resources:
+        limits:
+          memory: 350M
+
+  # ============================================
+  # Routing Proxy - OpenResty (Lua)
+  # ============================================
+  aoplatform-proxy:
+    container_name: aoplatform-proxy
+    build:
+      context: ../../platform/platform-proxy
+      dockerfile: Dockerfile
+    <<: [*restart_policy, *logging, *security]
+    healthcheck:
+      test: curl --fail http://127.0.0.1/healthcheck || exit 1
+      interval: 30s
+      timeout: 5s
+      retries: 3
+    depends_on:
+      aoplatform-redis:
+        condition: service_healthy
+    environment:
+      REDIS_ADDR: aoplatform-redis
+      REDIS_PORT: 6379
+      REDIS_PASSWORD: ${REDIS_PASSWORD}
+      DOCKER_DNS: 127.0.0.11
+    networks:
+      aoplatform-internal:
+      aoplatform-edge:
+        aliases:
+          - proxy
+    expose:
+      - "80"
+    deploy:
+      resources:
+        limits:
+          memory: 64M
+
+  # ============================================
+  # HTTPS Termination - Nginx
+  # ============================================
+  aoplatform-nginx:
+    container_name: aoplatform-nginx
+    build:
+      context: ../../platform/platform-nginx
+      dockerfile: Dockerfile.simple
+    <<: [*restart_policy, *logging, *security]
+    healthcheck:
+      test: curl --fail http://127.0.0.1/nginx_status || exit 1
+      interval: 30s
+      timeout: 5s
+      retries: 3
+    depends_on:
+      aoplatform-services:
+        condition: service_healthy
+      aoplatform-proxy:
+        condition: service_healthy
+    ports:
+      - "${NGINX_BIND_HTTP:-80}:80"
+      - "${NGINX_BIND_HTTPS:-443}:443"
+    environment:
+      USER_DOMAIN: ${USER_DOMAIN}
+      NGINX_BIND_HTTP: "80"
+      NGINX_BIND_HTTPS: "443"
+      PROXY_HOST: proxy
+      SERVICES_HOST: services
+      RATE_LIMIT_RPS: ${RATE_LIMIT_RPS:-10}
+      ENABLE_HSTS: ${ENABLE_HSTS:-true}
+    volumes:
+      - ${DATA_DIR}/ssl:/etc/nginx/ssl:ro
+    networks:
+      - aoplatform-edge
+    deploy:
+      resources:
+        limits:
+          memory: 32M
+
+  # ============================================
+  # NAT Traversal - GT Server
+  # ============================================
+  aonetwork-server:
+    container_name: aonetwork-server
+    image: hub.eulix.xyz/ao-space/gt:server-v1.0.0
+    <<: [*restart_policy, *logging, *security]
+    healthcheck:
+      test: bash -c 'printf "GET / HTTP/1.1\n\n" > /dev/tcp/127.0.0.1/80; exit $?;'
+      interval: 30s
+      timeout: 5s
+      retries: 3
+    depends_on:
+      aoplatform-services:
+        condition: service_healthy
+    ports:
+      - "${GT_BIND_PORT:-61012}:443/tcp"
+      - "3478:3478/udp"
+    environment:
+      NETWORK_TLSADDR: "443"
+      NETWORK_ADDR: "80"
+      NETWORK_LOGLEVEL: info
+      NETWORK_API_ADDR: "0.0.0.0:81"
+      NETWORK_AUTHAPI: http://services:8080/v2/platform/clients/network/auth
+      NETWORK_TIMEOUT: 75s
+    volumes:
+      - ${DATA_DIR}/ssl:/opt/crt:ro
+    networks:
+      - aoplatform-edge
+    deploy:
+      resources:
+        limits:
+          memory: 64M
+
+networks:
+  # Internal network: Database and cache (isolated)
+  aoplatform-internal:
+    name: aoplatform-internal
+    driver: bridge
+    internal: true
+
+  # Edge network: Services exposed to nginx/GT
+  aoplatform-edge:
+    name: aoplatform-edge
+    driver: bridge

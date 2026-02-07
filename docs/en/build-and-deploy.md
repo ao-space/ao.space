@@ -75,6 +75,42 @@ It should be noted that the above process used the docker-compose.yml file in th
 
 If you want to replace some component images with locally built images, you can modify the image entry of the relevant components to the image address compiled by yourself and execute the `docker-compose up -d` command.
 
+#### Simplified Platform Deployment (Single Machine)
+
+For personal/single-machine deployment, we provide a simplified setup:
+
+1. Configure environment:
+
+```shell
+cd deploy/platform
+cp .env.simple.example .env
+# Edit .env with your domain and passwords
+```
+
+2. Set up SSL certificate:
+
+```shell
+mkdir -p data/ssl
+# Copy your wildcard certificate to data/ssl/tls.crt and data/ssl/tls.key
+```
+
+3. Start the platform:
+
+```shell
+docker compose -f docker-compose.simple.yml up -d
+./scripts/init-network.sh
+```
+
+4. Verify deployment:
+
+```shell
+curl -H "Request-Id: test" https://your-domain.com/v2/platform/status
+```
+
+For DNS and SSL setup details, see `deploy/platform/README-simple.md`.
+
+The simplified platform also provides a one-step registration API (`POST /v2/platform/spaces`). See [Platform API Changes](./platform-api-changes.md) for details.
+
 
 ### Server build and deploy 
 

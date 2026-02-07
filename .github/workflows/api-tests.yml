@@ -1,0 +1,54 @@
+name: API Tests
+
+on:
+  push:
+    branches:
+      - main
+      - master
+  pull_request:
+
+jobs:
+  api-regression:
+    runs-on: ubuntu-latest
+    timeout-minutes: 45
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+        with:
+          submodules: recursive
+
+      - name: Setup Go
+        uses: actions/setup-go@v5
+        with:
+          go-version: '1.20'
+
+      - name: Route Contract Tests
+        run: |
+          cd server/space-aofs
+          go test ./routers/routers -run 'TestInitRoute_RegistersExpectedAPIs|TestStatus_WithoutUserID_ReturnsOK|TestFileList_WithoutUserID_ReturnsParamErr'
+          cd ../space-agent
+          go test ./biz/web/routers -run 'Test.*Router_RegistersExpectedAPIs'
+
+      - name: Prepare Compose Env
+        run: |
+          cp deploy/server/.env.aofs.example deploy/server/.env.aofs
+          mkdir -p deploy/server/data-aofs
+
+      - name: Start Core Stack
+        run: |
+          scripts/aofs-regression.sh up
+
+      - name: Run Full API Regression
+        run: |
+          AOFS_BASE=http://127.0.0.1:2001 AGENT_BASE=http://127.0.0.1:5678 GATEWAY_BASE=http://127.0.0.1:8080 ./scripts/api-full-regression.sh
+
+      - name: Dump Service Logs
+        if: always()
+        run: |
+          docker compose -f deploy/server/docker-compose.aofs.yml --env-file deploy/server/.env.aofs logs --no-color --tail=200
+
+      - name: Stop Core Stack
+        if: always()
+        run: |
+          scripts/aofs-regression.sh down

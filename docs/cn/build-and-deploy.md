@@ -75,6 +75,42 @@ docker compose --env-file .env up -d --build
 
 如果您希望用本地自己构建的镜像来替换部分组件，可将相关组件的 image 项修改为您自己编译的镜像地址，并执行 `docker-compose up -d` 命令即可。
 
+#### 精简平台部署 (单机)
+
+对于个人/单机部署，我们提供了简化的配置：
+
+1. 配置环境：
+
+```shell
+cd deploy/platform
+cp .env.simple.example .env
+# 编辑 .env 设置域名和密码
+```
+
+2. 配置 SSL 证书：
+
+```shell
+mkdir -p data/ssl
+# 将通配符证书复制到 data/ssl/tls.crt 和 data/ssl/tls.key
+```
+
+3. 启动平台：
+
+```shell
+docker compose -f docker-compose.simple.yml up -d
+./scripts/init-network.sh
+```
+
+4. 验证部署：
+
+```shell
+curl -H "Request-Id: test" https://your-domain.com/v2/platform/status
+```
+
+DNS 和 SSL 配置详情请参阅 `deploy/platform/README-simple.md`。
+
+精简版平台还提供一步注册 API (`POST /v2/platform/spaces`)。详情请参阅 [平台 API 变更说明](./platform-api-changes.md)。
+
 ### 服务端构建和部署 
 
 #### 环境准备
